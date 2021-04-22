@@ -1,0 +1,58 @@
+    local RATC130=RAT:New("RATC130", "RATC130 managed")
+    RATC130:ATC_Messages(false)
+	RATC130:SetCoalitionAircraft( "blue" )
+	RATC130:SetCoalition( "sameonly" )
+
+
+    local RATC5=RAT:New("RATC5", "RATC5 managed")
+    RATC5:ATC_Messages(false)
+    RATC5:RespawnAfterLanding()
+	RATC5:SetDeparture({"Al Minhad AFB", "Al Dhafra AFB", "Shiraz Intl"})
+	RATC5:ExcludedAirports({"Lar", "Jiroft"})
+	RATC5:SetCoalitionAircraft( "blue" )
+	RATC5:SetCoalition( "sameonly" )	
+
+    local RATP210=RAT:New("RATP210", "RATP210 managed")
+    RATP210:SetMaxDistance(200)
+    RATP210:ATC_Messages(false)
+	RATP210:SetCoalition( "sameonly" )
+	
+	local Civ4 = RAT:New("T45", "T45 managed")
+	Civ4:ATC_Messages(false)
+	Civ4:SetCoalitionAircraft( "blue" )
+	Civ4:SetCoalition( "sameonly" )
+	
+	local Bmil7 = RAT:New("RAT_F22", "RAT_F22 managed")
+	Bmil7:ATC_Messages(false)
+	Bmil7:SetTakeoff("cold")
+	Bmil7:SetDeparture({"Al Minhad AFB", "Al Dhafra AFB", "Kerman", "Lar"})
+	Bmil7:SetDestination({"Al Minhad AFB", "Al Dhafra AFB", "Kerman ", "Lar"})
+	Bmil7:SetCruiseAltitude(4500)
+	
+	local Bmil8 = RAT:New("RAT_F35", "RAT_F35 managed")
+	Bmil8:ATC_Messages(false)
+	Bmil8:SetTakeoff("cold")
+	Bmil8:SetDeparture({"Al Minhad AFB", "Al Dhafra AFB", "Kerman", "Lar"})
+	Bmil8:SetDestination({"Al Minhad AFB", "Al Dhafra AFB", "Kerman", "Lar"})
+	Bmil8:SetCruiseAltitude(5500)
+	
+	local Bmil9 = RAT:New("RAT_F18", "RAT_F18 managed")
+	Bmil9:ATC_Messages(false)
+	Bmil9:SetTakeoff("cold")
+	Bmil9:SetDeparture({"Al Minhad AFB", "Al Dhafra AFB", "Kerman", "Lar"})
+	Bmil9:SetDestination({"Al Minhad AFB", "Al Dhafra AFB", "Kerman", "Lar"})
+	Bmil9:SetCruiseAltitude(5000)
+	
+
+    local manager=RATMANAGER:New(12)
+    manager:Add(RATC130, 2)
+    manager:Add(RATC5, 1)
+    manager:Add(RATP210, 2)
+	manager:Add(Civ4, 2)
+	manager:Add(Bmil7, 2)
+    manager:Add(Bmil8, 2)
+	manager:Add(Bmil9, 2)
+    manager:Start(12)
+    manager:Stop(196000)
+
+trigger.action.outText("RAT Loaded ", 5)
