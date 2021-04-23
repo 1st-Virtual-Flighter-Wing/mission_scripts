@@ -76,7 +76,7 @@ if UNIT:FindByName("CVN") ~= nil then -- Checks if a Unit named "CVN" Exists
 	-- Get Sunset time.
 	local sunset=carrier:GetCoordinate():GetSunset()
 
-	local sunsetTest = UTILS.ClockToSeconds(carrier:GetCoordinate():GetSunset())
+	local sunsetSeconds = UTILS.ClockToSeconds(carrier:GetCoordinate():GetSunset())
 	
 	
 
@@ -86,8 +86,7 @@ if UNIT:FindByName("CVN") ~= nil then -- Checks if a Unit named "CVN" Exists
 	local window_length = 15*60 -- window length will be 15 minutes
 	-- getAbsTime will provide a format DCS can't really work well with, so it will be converted later
 	local current_mission_time = timer.getAbsTime( )
-	--local current_mission_time=timer.getAbsTime( )
-	--MESSAGE:New(tostring(current_mission_time), 30):ToAll()
+
 	-- getting the exact time of the sunset and sunrise in the mission
 	local sunrise_time=carrier_coordinate:GetMinutesToSunrise()*60 + current_mission_time
 	local sunset_time=carrier_coordinate:GetMinutesToSunset()*60 + current_mission_time
@@ -95,8 +94,6 @@ if UNIT:FindByName("CVN") ~= nil then -- Checks if a Unit named "CVN" Exists
 	-- calculating case III start and end times for clear weather (keeping it here for future use when we drop airboss)
 	local case_three_start_time = sunset_time -(30*60)
 	local case_three_end_time = sunrise_time +(30*60)
-	--MESSAGE:New(tostring(case_three_start_time), 30):ToAll()
-	--MESSAGE:New(tostring(current_mission_time), 30):ToAll()
 
 	local first_window_time= current_mission_time + 7*60 --mission time + 7*60 = mission time + 7 minutes
 	local first_window_end_time= first_window_time + window_length --first window opening + 30*60 = first window opening + 30 
@@ -762,7 +759,7 @@ if UNIT:FindByName("CVN") ~= nil then -- Checks if a Unit named "CVN" Exists
 			HypeMan.sendBotTable(myGrade)
 
 			timer.scheduleFunction(resetTrapSheetFileFormat, {}, timer.getTime() + 10) 
-			--local myScheduleTime = TIMER:New(10, nil,nil):resetTrapSheetFileFormat()
+
 		end
 	
 	function CVN_1stVFW_Airboss:addCyclicWindow(first_window_time_call,window_length_call, window_gap_call) -- This section sets recovery windows, currently it sets 5 on mission start
@@ -771,12 +768,12 @@ if UNIT:FindByName("CVN") ~= nil then -- Checks if a Unit named "CVN" Exists
 			local first_window_end_time= first_window_time_call + window_length_call
 			local window_end_time = first_window_end_time+window_gap_call*i
 			local midnight = 86400
-			if window_end_time < sunsetTest then
+			if window_end_time < sunsetSeconds then
 				local window1=CVN_1stVFW_Airboss:AddRecoveryWindow( UTILS.SecondsToClock(window_start_time,true), UTILS.SecondsToClock(window_end_time,true), 1, nil, true, 30, false)
 				env.info("Day Time")
 				
 			end
-			if window_end_time > sunsetTest then
+			if window_end_time > sunsetSeconds then
 				if window_end_time > midnight and window_start_time < midnight then 
 						window_end_time = window_end_time - midnight
 						local window1=CVN_1stVFW_Airboss:AddRecoveryWindow( UTILS.SecondsToClock(window_start_time,true), UTILS.SecondsToClock(window_end_time,true).."+1", 3,  0, true, 30, true)
@@ -792,7 +789,7 @@ if UNIT:FindByName("CVN") ~= nil then -- Checks if a Unit named "CVN" Exists
 
 			end	
 		end
-		--MESSAGE:New(tostring(CVN_1stVFW_Airboss.windowcount), 30):ToAll()
+
 		
 	end
 	CVN_1stVFW_Airboss:Start()-- Start airboss class.
