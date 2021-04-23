@@ -84,6 +84,8 @@ if UNIT:FindByName("CVN") ~= nil then -- Checks if a Unit named "CVN" Exists
 	local window_gap = 120*60 -- two hours of downtime.
 	-- window length
 	local window_length = 15*60 -- window length will be 15 minutes
+	-- case 3 window length
+	local case3WindowLength = 60*60
 	-- getAbsTime will provide a format DCS can't really work well with, so it will be converted later
 	local current_mission_time = timer.getAbsTime( )
 
@@ -678,6 +680,7 @@ if UNIT:FindByName("CVN") ~= nil then -- Checks if a Unit named "CVN" Exists
 			ClearDeckMenu = MENU_MISSION_COMMAND:New("Clear the 'Street'",CVN_Despawn_Menu,ClearDeck,PrefixDeck) 
 	
 	function CVN_1stVFW_Airboss:OnAfterStart(From,Event,To) -- function called on start of airboss object
+		CVN_1stVFW_Airboss:addCyclicWindow(first_window_time,window_length, window_gap) -- Calling the function to set the recoervy windows
 		ClearDeck(PrefixStern) -- clears units by prefix
 		ClearDeck(PrefixCat1)
 		ClearDeck(PrefixCat2)
@@ -686,9 +689,11 @@ if UNIT:FindByName("CVN") ~= nil then -- Checks if a Unit named "CVN" Exists
 		SpawnDeckStatics() -- Spawn statics in center of deck
 		SpawnSternStaics() -- Spawn statics on fantail
 		SpawnCat1Statics()
+
 	end
 
 	function CVN_1stVFW_Airboss:OnAfterRecoveryStart(From , Event, To, Case, Offset) -- function called on recovery start
+		--CVN_1stVFW_Airboss:addCyclicWindow(first_window_time,window_length, window_gap) -- Calling the function to set the recoervy windows
 		cvn_RH:__Start(2) -- starts helo with small delay
 		cvn_RT:__Start(2) -- starts recovery tanekr with small delay
 		ClearDeck(PrefixStern) -- clears units by prefix
@@ -700,10 +705,13 @@ if UNIT:FindByName("CVN") ~= nil then -- Checks if a Unit named "CVN" Exists
 		SpawnCat2Statics()
 		SpawnLSOStatics()
 		SpawnDeckStatics()
-		
 	end
 	
 	function CVN_1stVFW_Airboss:OnAfterRecoveryStop(From, Event, To) -- function called on recovery stop
+		CVN_1stVFW_Airboss:addCyclicWindow(first_window_time,window_length, window_gap) -- Calling the function to set the recoervy windows
+		--local windowById = CVN_1stVFW_Airboss:GetRecoveryWindowByID(0)
+		--CVN_1stVFW_Airboss:DeleteAllRecoveryWindows()
+		--CVN_1stVFW_Airboss:DeleteRecoveryWindow(windowById, 0)
 		cvn_RH:__Stop(30) -- stop helo with 30 second delay (will stop in air)
 		cvn_RT:__Stop(30) -- stop recoervy tanker (will stop while airborne
 		ClearDeck(PrefixStern) -- clearning all static units
@@ -762,38 +770,52 @@ if UNIT:FindByName("CVN") ~= nil then -- Checks if a Unit named "CVN" Exists
 
 		end
 	
-	function CVN_1stVFW_Airboss:addCyclicWindow(first_window_time_call,window_length_call, window_gap_call) -- This section sets recovery windows, currently it sets 5 on mission start
-		for i = 0, 4, 1 do
-			local window_start_time = first_window_time_call+window_gap_call*i
-			local first_window_end_time= first_window_time_call + window_length_call
-			local window_end_time = first_window_end_time+window_gap_call*i
-			local midnight = 86400
-			if window_end_time < sunsetSeconds then
-				local window1=CVN_1stVFW_Airboss:AddRecoveryWindow( UTILS.SecondsToClock(window_start_time,true), UTILS.SecondsToClock(window_end_time,true), 1, nil, true, 30, false)
-				env.info("Day Time")
-				
-			end
-			if window_end_time > sunsetSeconds then
-				if window_end_time > midnight and window_start_time < midnight then 
-						window_end_time = window_end_time - midnight
-						local window1=CVN_1stVFW_Airboss:AddRecoveryWindow( UTILS.SecondsToClock(window_start_time,true), UTILS.SecondsToClock(window_end_time,true).."+1", 3,  0, true, 30, true)
-				
-				elseif window_start_time > midnight then 
-						window_end_time = window_end_time - midnight
-						window_start_time = window_start_time - midnight
-						local window1=CVN_1stVFW_Airboss:AddRecoveryWindow( UTILS.SecondsToClock(window_start_time,true).."+1", UTILS.SecondsToClock(window_end_time,true).."+1", 3,  0, true, 30, true)
-				
-				elseif window_end_time <= midnight then 
-						local window1=CVN_1stVFW_Airboss:AddRecoveryWindow( UTILS.SecondsToClock(window_start_time,true), UTILS.SecondsToClock(window_end_time,true), 3,  0, true, 30, true)
-				end
+	function CVN_1stVFW_Airboss:addCyclicWindow(first_window_time_call,window_length_call, window_gap_call) -- This section sets recovery windows, currently it sets 5 on
+		local window_start_time
+		local window_end_time
+		local windowList = CVN_1stVFW_Airboss.recoverytimes
+		
+		while ( #windowList < 5) -- create recovery windows until we have 5 total windows in the queue
+			do
+			if ( #windowList == 0) then -- initial window creation based on first_window_time variable
+				window_start_time = first_window_time_call + window_gap_call * #windowList
+				local first_window_end_time = first_window_time_call + window_length_call
+				window_end_time = first_window_end_time + window_gap_call * #windowList
 
+			elseif ( #windowList > 0) then -- follow on windows are based on previous windows
+				local recoveryWindowTable = CVN_1stVFW_Airboss.recoverytimes
+				local lastRecoveryWindow = recoveryWindowTable[#recoveryWindowTable]
+
+				window_start_time = lastRecoveryWindow.START + window_gap
+				window_end_time = window_start_time + window_length
+			end
+
+			local midnight = 86400
+			if ( window_end_time < sunsetSeconds ) then -- check window end time and if it is after sunset, set case 3
+				local window1 = CVN_1stVFW_Airboss:AddRecoveryWindow( UTILS.SecondsToClock(window_start_time, true ), UTILS.SecondsToClock( window_end_time, true ), 1, nil, true, 30, false)
+			end
+
+			if window_end_time > sunsetSeconds then
+
+				window_end_time = window_start_time + case3WindowLength 
+
+				if window_end_time > midnight and window_start_time < midnight then 
+					window_end_time = window_end_time - midnight
+					local window1=CVN_1stVFW_Airboss:AddRecoveryWindow( UTILS.SecondsToClock(window_start_time,true), UTILS.SecondsToClock(window_end_time,true).."+1", 3,  0, true, 30, true)
+
+				elseif window_start_time > midnight then 
+					window_end_time = window_end_time - midnight
+					window_start_time = window_start_time - midnight
+					local window1=CVN_1stVFW_Airboss:AddRecoveryWindow( UTILS.SecondsToClock(window_start_time,true).."+1", UTILS.SecondsToClock(window_end_time,true).."+1", 3,  0, true, 30, true)
+
+				elseif window_end_time <= midnight then 
+					local window1=CVN_1stVFW_Airboss:AddRecoveryWindow( UTILS.SecondsToClock(window_start_time,true), UTILS.SecondsToClock(window_end_time,true), 3,  0, true, 30, true)
+				end
 			end	
 		end
 
-		
 	end
 	CVN_1stVFW_Airboss:Start()-- Start airboss class.
-	CVN_1stVFW_Airboss:addCyclicWindow(first_window_time,window_length, window_gap) -- Calling the function to set the recoervy windows
 end
 
 if UNIT:FindByName("LHA") ~= nil then -- Checks if a unit named "LHA" exist
